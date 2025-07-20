@@ -1,0 +1,26 @@
+{
+  "name": "week3-web-chatbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doosjsu/week3-web-chatbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/doosjsu/week3-web-chatbot/issues"
+  },
+  "homepage": "https://github.com/doosjsu/week3-web-chatbot#readme",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "openai": "^5.10.1"
+  }
+}
