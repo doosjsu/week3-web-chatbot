@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
 dotenv.config();
 
@@ -11,9 +11,9 @@ const port = 3001;
 app.use(cors());
 app.use(express.json());
 
-const openai = new OpenAIApi(new Configuration({
+const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-}));
+});
 
 // In-memory conversation store: { sessionId: [ {role, content}, ... ] }
 const conversations = {};
@@ -31,11 +31,11 @@ app.post('/chat', async (req, res) => {
     conversations[sessionId].push({ role: 'user', content: message });
 
     try {
-        const completion = await openai.createChatCompletion({
+        const completion = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
             messages: conversations[sessionId],
         });
-        const botMessage = completion.data.choices[0].message.content;
+        const botMessage = completion.choices[0].message.content;
         conversations[sessionId].push({ role: 'assistant', content: botMessage });
         res.json({ response: botMessage });
     } catch (error) {
