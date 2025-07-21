@@ -6,10 +6,14 @@ const OpenAI = require('openai');
 dotenv.config();
 
 const app = express();
-const port = 3001;
+const port = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files (including index.html) from the current directory
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -26,7 +30,9 @@ app.post('/chat', async (req, res) => {
 
     // Initialize conversation if new
     if (!conversations[sessionId]) {
-        conversations[sessionId] = [];
+        conversations[sessionId] = [
+            { role: 'system', content: "You are a helpful chatbot. If the user tells you their name, remember it and use it in future responses. If the user asks 'Who am I?' or 'What is my name?', answer with the name they provided. If you don't know, ask them to tell you their name." }
+        ];
     }
     conversations[sessionId].push({ role: 'user', content: message });
 

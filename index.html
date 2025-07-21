@@ -110,14 +110,15 @@
         const chatForm = document.getElementById('chat-form');
         const userInput = document.getElementById('user-input');
 
-        // Fixed responses for demonstration
-        const responses = {
-            'hi': 'Hello! How can I help you today?',
-            'hello': 'Hi there! What can I do for you?',
-            'how are you': "I'm just a bot, but I'm doing great!",
-            'what is your name': "I'm your friendly chatbot.",
-            'bye': 'Goodbye! Have a great day!',
-        };
+        // Generate or retrieve a session ID for conversation history
+        function getSessionId() {
+            let sessionId = localStorage.getItem('chatbot_session_id');
+            if (!sessionId) {
+                sessionId = Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('chatbot_session_id', sessionId);
+            }
+            return sessionId;
+        }
 
         function addMessage(content, sender) {
             const messageDiv = document.createElement('div');
@@ -130,21 +131,31 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function getBotResponse(input) {
-            const cleaned = input.trim().toLowerCase();
-            for (const key in responses) {
-                if (cleaned.includes(key)) {
-                    return responses[key];
+        async function getBotResponse(input) {
+            // Always send the message to the backend for AI response
+            try {
+                const sessionId = getSessionId();
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: input, sessionId })
+                });
+                const data = await response.json();
+                if (data.response) {
+                    return data.response;
+                } else {
+                    return "Sorry, I couldn't get an answer from the AI.";
                 }
+            } catch (err) {
+                return "Sorry, there was an error contacting the server.";
             }
-            return "Sorry, I don't understand. Try saying 'hi', 'how are you', or 'bye'.";
         }
 
-        chatForm.addEventListener('submit', function(e) {
+        chatForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const userText = userInput.value;
             addMessage(userText, 'user');
-            const botReply = getBotResponse(userText);
+            const botReply = await getBotResponse(userText);
             setTimeout(() => addMessage(botReply, 'bot'), 500);
             userInput.value = '';
         });
