@@ -5,17 +5,29 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Initialize Supabase client with error handling
+let supabase;
+try {
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+} catch (error) {
+  console.error('Supabase client initialization error:', error);
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
+  
+  if (!supabase) {
+    console.error('Supabase client not initialized');
+    res.status(500).json({ error: 'Database connection failed' });
+    return;
+  }
+
   const { message, sessionId } = req.body;
   if (!message || !sessionId) {
     res.status(400).json({ error: 'Missing message or sessionId' });
@@ -24,11 +36,17 @@ export default async function handler(req, res) {
 
   try {
     // Get existing conversation from Supabase
-    let { data: conversation, error } = await supabase
+    let { data: conversation, error: fetchError } = await supabase
       .from('Conversations')
       .select('messages')
       .eq('conversation_id', sessionId)
       .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Supabase fetch error:', fetchError);
+      res.status(500).json({ error: 'Database fetch failed' });
+      return;
+    }
 
     let messages = [];
     if (conversation) {
@@ -36,7 +54,7 @@ export default async function handler(req, res) {
     } else {
       // Initialize new conversation with system message
       messages = [
-        { role: 'system', content: "You are a helpful chatbot. If the user tells you their name, remember it and use it in future responses. If the user asks 'Who am I?' or 'What is my name?', answer with the name they provided. If you don't know, ask them to tell you their name." }
+        { role: 'system', content: "You are a helpful chatbot. If the user tells you their name, remember it and use it in future responses. If the user asks 'Who am I?' or 'What is my name?', answer with the name they provided. If you don't know, ask them to tell you your name." }
       ];
     }
 
@@ -54,23 +72,35 @@ export default async function handler(req, res) {
     // Save/update conversation in Supabase
     if (conversation) {
       // Update existing conversation
-      await supabase
+      const { error: updateError } = await supabase
         .from('Conversations')
         .update({ messages: messages })
         .eq('conversation_id', sessionId);
+      
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        res.status(500).json({ error: 'Database update failed' });
+        return;
+      }
     } else {
       // Insert new conversation
-      await supabase
+      const { error: insertError } = await supabase
         .from('Conversations')
         .insert({
           conversation_id: sessionId,
           messages: messages
         });
+      
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        res.status(500).json({ error: 'Database insert failed' });
+        return;
+      }
     }
 
     res.status(200).json({ response: botMessage });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('General error:', error);
     res.status(500).json({ error: 'Failed to process request' });
   }
 } 
