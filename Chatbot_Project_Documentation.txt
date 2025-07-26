@@ -1,0 +1,136 @@
+Chatbot Web Project Documentation
+
+1. Project Requirements
+
+Software & Accounts:
+- Node.js: JavaScript runtime environment required to run backend code and development tools on your computer.
+- npm: Node.js package manager (comes with Node.js) used to install project dependencies.
+- Vercel account: Required for deploying your project to the Vercel platform and for using the Vercel CLI for local development.
+- OpenAI API key: Needed to access OpenAI's language models for generating chatbot responses.
+- Supabase account: Required for database storage of conversations and user sessions.
+
+Project Files:
+- index.html — The frontend (chat UI)
+- api/chat.js — The backend (Vercel serverless function for chat with Supabase integration)
+- package.json — Project dependencies
+- .env — (You need to create this) Contains your API keys:
+  OPENAI_API_KEY=your_openai_api_key_here
+  SUPABASE_URL=your_supabase_project_url
+  SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+Database Setup:
+- Create a table named "Conversations" in Supabase with columns:
+  - id (auto-increment primary key)
+  - created_at (timestamp)
+  - conversation_id (text)
+  - messages (jsonb)
+
+------------------------------------------------------------
+
+2. How to Set Up and Run Locally
+
+Step-by-Step Setup:
+1. Clone or download the project to your computer.
+2. Install dependencies:
+   npm install
+3. Install Vercel CLI globally (if not already):
+   npm install -g vercel
+4. Add your API keys to .env file:
+   - Create a file named .env in your project root.
+   - Add these lines (replace with your actual keys):
+     OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
+     SUPABASE_URL=https://your-project.supabase.co
+     SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+5. Run the project locally:
+   vercel dev
+   - The first time, you'll log in and set up the project.
+   - After that, just run vercel dev to start the local server.
+6. Open your browser to http://localhost:3000 to use the chatbot.
+
+------------------------------------------------------------
+
+3. How the Web Chatbot Works
+
+Frontend (index.html):
+- Displays a chat interface (messages, input box, send button).
+- When you type a message and hit send:
+  1. The message is shown in the chat window.
+  2. The message (and a session ID) is sent to the backend at /api/chat using fetch.
+  3. When a response is received from the backend, it's displayed as a bot message.
+
+Backend (api/chat.js):
+- Receives POST requests at /api/chat with { message, sessionId }.
+- Connects to Supabase database to retrieve existing conversation history.
+- If no conversation exists, creates a new one with system message.
+- Sends the conversation to OpenAI's API (using your API key).
+- Gets the AI's response and saves the complete conversation back to Supabase.
+- Returns the bot's response to the frontend.
+
+Session Handling:
+- Each user gets a unique session ID (stored in their browser's localStorage).
+- Conversations are persisted in Supabase database, maintaining context across sessions.
+- Users can continue conversations even after closing and reopening their browser.
+
+Database Operations:
+- Conversations are stored in the "Conversations" table in Supabase.
+- Each conversation is identified by conversation_id (session ID).
+- The complete message history is stored in the messages JSONB column.
+- New conversations are inserted, existing ones are updated.
+
+------------------------------------------------------------
+
+4. How to Deploy to Vercel
+
+1. Push your project to GitHub (or another git provider).
+2. Connect your repo to Vercel (via the Vercel dashboard).
+3. Set your environment variables in Vercel's dashboard:
+   - OPENAI_API_KEY
+   - SUPABASE_URL
+   - SUPABASE_SERVICE_ROLE_KEY
+4. Deploy!
+   - Vercel will serve your static files and run your /api/chat.js as a serverless function.
+   - The backend will connect to your Supabase database for conversation storage.
+
+------------------------------------------------------------
+
+5. Summary Diagram (Text Version)
+
+User types message and clicks Send ->
+Browser (index.html) sends POST /api/chat {message, sessionId} ->
+Vercel Serverless (api/chat.js) retrieves conversation from Supabase ->
+Vercel Serverless sends conversation to OpenAI API ->
+OpenAI API returns AI response ->
+Vercel Serverless saves updated conversation to Supabase ->
+Vercel Serverless sends response to Browser ->
+Browser displays bot reply to User
+
+------------------------------------------------------------
+
+6. Key Points
+- All you need to run locally is Node.js, npm, Vercel CLI, OpenAI API key, and Supabase credentials.
+- The frontend and backend are integrated: the frontend sends messages to the backend, which talks to OpenAI and stores conversations in Supabase.
+- Vercel makes it easy to deploy and run both static frontend and serverless backend together.
+- Conversations are now persistent and stored in a database, allowing for better user experience and conversation history.
+- The system automatically handles database operations (create/update conversations) based on session IDs.
+
+------------------------------------------------------------
+
+7. Dependencies
+
+Required npm packages:
+- openai: For OpenAI API integration
+- @supabase/supabase-js: For Supabase database operations
+- cors: For handling cross-origin requests
+- dotenv: For environment variable management
+- express: For server functionality (if using traditional backend)
+
+------------------------------------------------------------
+
+8. Environment Variables
+
+Required environment variables:
+- OPENAI_API_KEY: Your OpenAI API key for AI responses
+- SUPABASE_URL: Your Supabase project URL
+- SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key for database access
+
+These must be set both locally (.env file) and in Vercel's environment variables for deployment. 
